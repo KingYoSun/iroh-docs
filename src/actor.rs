@@ -706,6 +706,10 @@ impl Actor {
             }
         };
 
+        // Dropping the queued actions drops their reply channels, which fails the waiting callers.
+        // The channel would otherwise keep them for as long as any sender lives.
+        self.action_rx.close();
+        while self.action_rx.try_recv().is_ok() {}
         if let Err(cause) = self.store.flush() {
             warn!(?cause, "failed to flush store");
         }
@@ -1122,6 +1126,22 @@ fn send_reply_error<T>(_err: T) -> SendReplyError {
 mod tests {
     use super::*;
     use crate::store;
+
+    /// A request still queued when the actor stops must end with an error. The channel keeps queued
+    /// items while any sender lives, and a waiting caller usually holds one.
+    #[tokio::test]
+    async fn requests_queued_behind_shutdown_do_not_wait_forever() -> anyhow::Result<()> {
+        let sync = SyncHandle::spawn(store::Store::memory(), None, "queued".into());
+        let queued = futures_buffered::join_all((0..64).map(|_| sync.flush_store()));
+        let (stopped, _) = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            tokio::join!(sync.shutdown(), queued)
+        })
+        .await
+        .context("a queued request got no reply")?;
+        stopped?;
+        Ok(())
+    }
+
     #[tokio::test]
     async fn open_close() -> anyhow::Result<()> {
         let store = store::Store::memory();
