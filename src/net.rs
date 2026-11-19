@@ -2,7 +2,10 @@
 
 use std::future::Future;
 
-use iroh::{Endpoint, EndpointAddr, PublicKey};
+use iroh::{
+    endpoint::{ReadError, ReadToEndError, RecvStream},
+    Endpoint, EndpointAddr, PublicKey,
+};
 use n0_future::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error_span, trace, Instrument};
@@ -45,8 +48,7 @@ pub async fn connect_and_sync(
 
     send_stream.finish().map_err(ConnectError::close)?;
     send_stream.stopped().await.map_err(ConnectError::close)?;
-    recv_stream
-        .read_to_end(0)
+    read_rest(&mut recv_stream)
         .await
         .map_err(ConnectError::close)?;
 
@@ -89,6 +91,17 @@ pub async fn connect_and_sync(
     };
 
     Ok(res)
+}
+
+/// Reads the rest of a sync stream, which the peer only finishes.
+///
+/// The sync loop may already have read the end of the stream. Since noq 1.3,
+/// `read_to_end` then fails with `ClosedStream`, so that counts as the end too.
+async fn read_rest(recv_stream: &mut RecvStream) -> Result<(), ReadToEndError> {
+    match recv_stream.read_to_end(0).await {
+        Ok(_) | Err(ReadToEndError::Read(ReadError::ClosedStream)) => Ok(()),
+        Err(error) => Err(error),
+    }
 }
 
 /// Whether we want to accept or reject an incoming sync request.
@@ -147,8 +160,7 @@ where
         .stopped()
         .await
         .map_err(|error| AcceptError::close(peer, namespace, error))?;
-    recv_stream
-        .read_to_end(0)
+    read_rest(&mut recv_stream)
         .await
         .map_err(|error| AcceptError::close(peer, namespace, error))?;
 
