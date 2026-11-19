@@ -3,10 +3,7 @@ use std::collections::{hash_map, HashMap};
 use anyhow::{Context, Result};
 use bytes::Bytes;
 use iroh::EndpointId;
-use iroh_gossip::{
-    api::{Event, GossipReceiver, GossipSender, JoinOptions},
-    net::Gossip,
-};
+use iroh_gossip::{Event, Gossip, GossipReceiver, GossipSender, JoinOptions};
 use n0_future::{
     task::{AbortHandle, JoinSet},
     StreamExt,

@@ -80,42 +80,8 @@ impl DocsApi {
             .inner
             .as_local()
             .context("cannot listen on remote API")?;
-        let handler: irpc::rpc::Handler<DocsProtocol> = Arc::new(move |msg, _rx, tx| {
-            let local = local.clone();
-            Box::pin(async move {
-                match msg {
-                    DocsProtocol::Open(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Close(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Status(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::List(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Create(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Drop(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Import(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Set(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::SetHash(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Get(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::GetExact(msg) => local.send((msg, tx)).await,
-                    // DocsProtocol::ImportFile(msg) => local.send((msg, tx)).await,
-                    // DocsProtocol::ExportFile(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Del(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::StartSync(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Leave(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Share(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::Subscribe(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::GetDownloadPolicy(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::SetDownloadPolicy(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::GetSyncPeers(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::AuthorList(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::AuthorCreate(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::AuthorGetDefault(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::AuthorSetDefault(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::AuthorImport(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::AuthorExport(msg) => local.send((msg, tx)).await,
-                    DocsProtocol::AuthorDelete(msg) => local.send((msg, tx)).await,
-                }
-            })
-        });
-        let join_handle = n0_future::task::spawn(irpc::rpc::listen(endpoint, handler));
+        let join_handle =
+            n0_future::task::spawn(irpc::noq::listen::<DocsProtocol>(endpoint, local));
         Ok(n0_future::task::AbortOnDropHandle::new(join_handle))
     }
 

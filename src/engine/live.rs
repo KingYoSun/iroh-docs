@@ -15,7 +15,7 @@ use iroh_blobs::{
     },
     Hash, HashAndFormat,
 };
-use iroh_gossip::net::Gossip;
+use iroh_gossip::Gossip;
 use n0_future::{task::JoinSet, time::SystemTime, FutureExt};
 use serde::{Deserialize, Serialize};
 use tokio::sync::{self, mpsc, oneshot};

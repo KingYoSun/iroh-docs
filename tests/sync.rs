@@ -16,7 +16,7 @@ use iroh_docs::{
     store::{DownloadPolicy, FilterKind, Query},
     AuthorId, ContentStatus, Entry,
 };
-use iroh_gossip::{net::Gossip, proto::TopicId};
+use iroh_gossip::{Gossip, TopicId};
 use n0_future::{
     time::{Duration, Instant},
     Stream, TryStreamExt,
